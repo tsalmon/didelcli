@@ -121,6 +121,10 @@ class Course(CoursePage):
         if about:
             self.about = about[0].get_text().strip()
 
+    def docs_and_links(self):
+        d = Documents(self.ref)
+        d.fetch(self.session)
+
 
     def enroll(self, key=None):
         """
@@ -146,3 +150,16 @@ class Course(CoursePage):
         text = u'Vous avez été désinscrit'
         params = {'cmd': 'exUnreg', 'course': self.ref}
         return self.session.get_ensure_text(path, text, params=params)
+
+
+class Documents(DidelEntity):
+
+    URL_FMT = '/claroline/document/document.php?cidReset=true&cidReq={ref}'
+
+    def __init__(self, ref):
+        self.path = self.URL_FMT.format(ref=ref)
+        super(Documents, self).__init__(ref)
+
+
+    def populate(self, soup, session):
+        print soup
