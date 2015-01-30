@@ -120,17 +120,21 @@ class Course(CoursePage):
         header = soup.select('.courseInfos')[0]
         self.title = header.select('h2 a')[0].get_text()
         self.teacher = header.select('p')[0].get_text().split('\n')[-1].strip()
-
         about = soup.select('#portletAbout')
         if about:
             self.about = about[0].get_text().strip()
 
+
     def docs_and_links(self, path):
+        """
+        synchronize didel documents with user
+        """
         if not (os.path.isdir(path)):
-            print("the path '" + path + "' dosen't exist")
+            raise IOError # if the path defined in SOURCE_FILE (cf config.py) isn't available
         d = DocumentsLinks(self.ref)
         d.fetch(self.session)
         d.synchronize(path)
+
 
     def enroll(self, key=None):
         """
@@ -146,6 +150,8 @@ class Course(CoursePage):
         data['registrationKey'] = 'scade'
         resp = self.session.post(path, params=params, data=data)
         return resp.ok and ok_text in resp.text
+
+
     def unenroll(self):
         """
         Unenroll the current student from this course
@@ -160,62 +166,69 @@ class DocumentsLinks(DidelEntity):
 
     URL_FMT = '/claroline/document/document.php?cidReset=true&cidReq={ref}'
 
-    def __init__(self, ref, sub_url=None):
+    def __init__(self, ref, path=None):
+        super(DocumentsLinks, self).__init__()
         self.ressources = {}
         self.ref = ref
-        if(sub_url is None):
-            self.path = self.URL_FMT.format(ref=ref)
+        if path :
+            self.path = path
+            self.ref = ""            
         else:
-            self.path = sub_url
-            self.ref = ""
-        super(DocumentsLinks, self).__init__(self.ref)
+            self.path = self.URL_FMT.format(ref=ref)
 
 
     def populate(self, soup, session):
+        """
+        get all documents and folder of a course
+        """
         table = soup.select(".claroTable tbody tr[align=center]")
         for line in table:
             cols = line.select("td")
             item = cols[0].select(".item")[0]
-            document_nom = item.contents[1].strip()
-            document_date = cols[2].select("small")[0].contents[0].strip()
-            document_href = cols[0].select("a")[0].attrs["href"].strip()
+            name = item.contents[1].strip()
+            date = cols[2].select("small")[0].contents[0].strip()
+            url = cols[0].select("a")[0].attrs["href"].strip()
             if(re.match(r"^<img (alt=\"\")? src=\"/web/img/folder", str(item.select("img")[0]))) is not None:
-                doc = DocumentsLinks("", document_href)
+                doc = DocumentsLinks("", url)
                 doc.fetch(self.session)
-                self.ressources[document_nom] = doc
+                self.add_resource(name, doc)
             else:
-                self.ressources[document_nom] = Document(document_nom, document_href, document_date)
+                self.add_resource(name, Document(name, url, date))
 
     def timestamp(self, date):
         return mktime(datetime.datetime.strptime(date, "%d.%m.%Y").timetuple())
+
  
     def synchronize(self, path):
-        path = path + "/" + self.ref
-        if not(os.path.isdir(path)):
+        """
+        compare files on didel with file in folder,
+            and calling download add or reset files'user
+            only if not exist or older
+        """
+        path = "%s/%s" % (path, self.ref)
+        if not os.path.isdir(path):
             mkdir(path)
-        for k in self.ressources:
-            if(isinstance(self.ressources[k], DocumentsLinks)): 
-                self.ressources[k].synchronize(path + "/" + k)
+        for k in self._resources:
+            if(isinstance(self._resources[k], DocumentsLinks)): 
+                self._resources[k].synchronize("%s/%s" % (path, k))
             else:
-                if (not os.path.exists(path + "/" + k) or (
-                        (os.stat(path + "/" + k).st_mtime <
-                        self.timestamp(self.ressources[k].date))
-                    )):
-                    self.download(self.ressources[k], path)
+                no_file = not os.path.exists("%s/%s" % (path, k))
+                didel_file = self.timestamp(self._resources[k].date)
+                if no_file or (didel_file > os.stat("%s/%s" % (path, k)).st_mtime):
+                    self.download(self._resources[k], path)
+    
 
     def download(self, document, path):
-        response = self.session.get(ROOT_URL + document.href)
-        document.path = path + "/" + document.nom
-        file = open(document.path, 'w')
-        file.write(response.content)
-        file.close()
-        t = self.timestamp(document.date)
-        os.utime(document.path, (t, t))
-        print(document.path + "... downloaded")
+        response = self.session.get(ROOT_URL + document.url)
+        document.path = "%s/%s" % (path, document.name)
+        with open(document.path, 'w') as file:
+            file.write(response.content)
+        
 
-class Document:
 
-    def __init__(self, nom, href, date):
-        self.nom = nom
-        self.href = href
+class Document(object):
+
+    def __init__(self, name, url, date):
+        self.name = name
+        self.url = url
         self.date = date
