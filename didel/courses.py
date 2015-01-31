@@ -9,6 +9,7 @@ except ImportError:  # Python 3
 
 from didel.base import DidelEntity
 from didel.souputils import parse_homemade_dl
+import re
 
 class CoursePage(DidelEntity):
     """
@@ -156,10 +157,21 @@ class Documents(DidelEntity):
 
     URL_FMT = '/claroline/document/document.php?cidReset=true&cidReq={ref}'
 
-    def __init__(self, ref):
-        self.path = self.URL_FMT.format(ref=ref)
+    def __init__(self, ref, sub_url=None):
+        if(sub_url is None):
+            self.path = self.URL_FMT.format(ref=ref)
+        else:
+            self.path = sub_url
+            ref = ""
         super(Documents, self).__init__(ref)
 
 
     def populate(self, soup, session):
-        print soup
+        documents = soup.select(".claroTable .item")
+        for d in documents:
+            if(re.match(r"^<img (alt=\"\")? src=\"/web/img/folder", str(d.select("img")[0]))) is not None:
+                print "<fold title=\""+ str(d.contents[1]).strip() +"\">"
+                d = Documents("", d["href"]).fetch(self.session)
+                print "</fold>"
+            else:
+                print str(d.contents)
