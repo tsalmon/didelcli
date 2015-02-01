@@ -122,10 +122,10 @@ class Course(CoursePage):
         if about:
             self.about = about[0].get_text().strip()
 
-    def docs_and_links(self):
-        d = Documents(self.ref)
+    def docs_and_links(self, path):
+        d = DocumentsLinks(self.ref)
         d.fetch(self.session)
-
+        d.synchronize(path)
 
     def enroll(self, key=None):
         """
@@ -153,25 +153,63 @@ class Course(CoursePage):
         return self.session.get_ensure_text(path, text, params=params)
 
 
-class Documents(DidelEntity):
+class DocumentsLinks(DidelEntity):
 
     URL_FMT = '/claroline/document/document.php?cidReset=true&cidReq={ref}'
 
     def __init__(self, ref, sub_url=None):
+        self.ressources = {}
         if(sub_url is None):
             self.path = self.URL_FMT.format(ref=ref)
         else:
             self.path = sub_url
             ref = ""
-        super(Documents, self).__init__(ref)
+        super(DocumentsLinks, self).__init__(ref)
 
 
     def populate(self, soup, session):
-        documents = soup.select(".claroTable .item")
-        for d in documents:
-            if(re.match(r"^<img (alt=\"\")? src=\"/web/img/folder", str(d.select("img")[0]))) is not None:
-                print "<fold title=\""+ str(d.contents[1]).strip() +"\">"
-                d = Documents("", d["href"]).fetch(self.session)
-                print "</fold>"
+        table = soup.select(".claroTable tbody tr[align=center]")
+        for line in table:
+            cols = line.select("td")
+            item = cols[0].select(".item")[0]
+            document_nom = item.contents[1]
+            document_date = cols[2].select("small")[0].contents[0]
+            document_href = cols[0].select("a")[0].attrs["href"]
+            if(re.match(r"^<img (alt=\"\")? src=\"/web/img/folder", str(item.select("img")[0]))) is not None:
+                doc = DocumentsLinks("", document_href)
+                doc.fetch(self.session)
+                self.ressources[document_nom] = doc
             else:
-                print str(d.contents)
+                self.ressources[document_nom] = Document(document_nom, document_href, document_date)
+
+    def toString(self):
+        for k in self.ressources:
+            if(self.ressources[k].__class__.__name__ == 'DocumentsLinks'): # is a folder
+                self.ressources[k].toString()
+            else :
+                self.ressources[k].toString()
+
+    def synchronize(self, path):
+        for k in self.ressources:
+            if(self.ressources[k].__class__.__name__ == 'DocumentsLinks'): # is a folder
+                self.ressources[k].synchronize(path + "/" + k)
+            else :
+                download(self.ressources[k], path)
+    
+    def download(self, ressource, path):
+        print "download"
+
+
+class Document:
+
+    def __init__(self, nom, href, date):
+        self.nom = nom
+        self.href = href
+        self.date = date
+
+
+    def toString(self):
+        print "%s %s %s" % (self.nom, self.date, self.href)
+
+
+
