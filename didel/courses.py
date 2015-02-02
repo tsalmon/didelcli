@@ -7,9 +7,12 @@ try:
 except ImportError:  # Python 3
     from urllib.parse import urlparse, parse_qs
 
-from didel.base import DidelEntity
+from didel.base import DidelEntity, ROOT_URL
 from didel.souputils import parse_homemade_dl
-import re
+import re, os, time, datetime
+import urllib2
+
+from os import mkdir
 
 class CoursePage(DidelEntity):
     """
@@ -123,6 +126,8 @@ class Course(CoursePage):
             self.about = about[0].get_text().strip()
 
     def docs_and_links(self, path):
+        if not (os.path.isdir(path)):
+            print("the path '" + path + "' doen't exist")
         d = DocumentsLinks(self.ref)
         d.fetch(self.session)
         d.synchronize(path)
@@ -141,8 +146,6 @@ class Course(CoursePage):
         data['registrationKey'] = 'scade'
         resp = self.session.post(path, params=params, data=data)
         return resp.ok and ok_text in resp.text
-
-
     def unenroll(self):
         """
         Unenroll the current student from this course
@@ -159,12 +162,13 @@ class DocumentsLinks(DidelEntity):
 
     def __init__(self, ref, sub_url=None):
         self.ressources = {}
+        self.ref = ref
         if(sub_url is None):
             self.path = self.URL_FMT.format(ref=ref)
         else:
             self.path = sub_url
-            ref = ""
-        super(DocumentsLinks, self).__init__(ref)
+            self.ref = ""
+        super(DocumentsLinks, self).__init__(self.ref)
 
 
     def populate(self, soup, session):
@@ -172,9 +176,9 @@ class DocumentsLinks(DidelEntity):
         for line in table:
             cols = line.select("td")
             item = cols[0].select(".item")[0]
-            document_nom = item.contents[1]
-            document_date = cols[2].select("small")[0].contents[0]
-            document_href = cols[0].select("a")[0].attrs["href"]
+            document_nom = item.contents[1].strip()
+            document_date = cols[2].select("small")[0].contents[0].strip()
+            document_href = cols[0].select("a")[0].attrs["href"].strip()
             if(re.match(r"^<img (alt=\"\")? src=\"/web/img/folder", str(item.select("img")[0]))) is not None:
                 doc = DocumentsLinks("", document_href)
                 doc.fetch(self.session)
@@ -182,23 +186,32 @@ class DocumentsLinks(DidelEntity):
             else:
                 self.ressources[document_nom] = Document(document_nom, document_href, document_date)
 
-    def toString(self):
+    def __repr__(self):
         for k in self.ressources:
             if(self.ressources[k].__class__.__name__ == 'DocumentsLinks'): # is a folder
                 self.ressources[k].toString()
             else :
                 self.ressources[k].toString()
-
+ 
     def synchronize(self, path):
+        path = path + "/" + self.ref
+        if not(os.path.isdir(path)):
+            mkdir(path)
         for k in self.ressources:
-            if(self.ressources[k].__class__.__name__ == 'DocumentsLinks'): # is a folder
+            if(self.ressources[k].__class__.__name__ == 'DocumentsLinks'): 
                 self.ressources[k].synchronize(path + "/" + k)
             else :
-                download(self.ressources[k], path)
+                self.download(self.ressources[k], path)
     
-    def download(self, ressource, path):
-        print "download"
-
+    def download(self, document, path):
+        response = urllib2.urlopen(ROOT_URL + document.href)
+        document.path = path + "/" + document.nom
+        file = open(document.path, 'w')
+        file.write(response.read())
+        file.close()
+        t = time.mktime(datetime.datetime.strptime(document.date, "%d.%m.%Y").timetuple())
+        os.utime(document.path, (t, t))
+        print(document.path + "... downloaded")
 
 class Document:
 
@@ -207,9 +220,9 @@ class Document:
         self.href = href
         self.date = date
 
-
     def toString(self):
         print "%s %s %s" % (self.nom, self.date, self.href)
+
 
 
 
