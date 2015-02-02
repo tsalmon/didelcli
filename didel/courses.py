@@ -9,9 +9,10 @@ except ImportError:  # Python 3
 
 from didel.base import DidelEntity, ROOT_URL
 from didel.souputils import parse_homemade_dl
-import re, os, time, datetime
+import re, os, datetime
 import urllib2
 
+from time import mktime
 from os import mkdir
 
 class CoursePage(DidelEntity):
@@ -186,12 +187,8 @@ class DocumentsLinks(DidelEntity):
             else:
                 self.ressources[document_nom] = Document(document_nom, document_href, document_date)
 
-    def __repr__(self):
-        for k in self.ressources:
-            if(self.ressources[k].__class__.__name__ == 'DocumentsLinks'): # is a folder
-                self.ressources[k].toString()
-            else :
-                self.ressources[k].toString()
+    def timestamp(self, date):
+        return mktime(datetime.datetime.strptime(date, "%d.%m.%Y").timetuple())
  
     def synchronize(self, path):
         path = path + "/" + self.ref
@@ -200,16 +197,20 @@ class DocumentsLinks(DidelEntity):
         for k in self.ressources:
             if(self.ressources[k].__class__.__name__ == 'DocumentsLinks'): 
                 self.ressources[k].synchronize(path + "/" + k)
-            else :
-                self.download(self.ressources[k], path)
-    
+            else:
+                if (not os.path.exists(path + "/" + k) or (
+                        (os.stat(path + "/" + k).st_mtime <
+                        self.timestamp(self.ressources[k].date))
+                    )):
+                    self.download(self.ressources[k], path)
+
     def download(self, document, path):
         response = urllib2.urlopen(ROOT_URL + document.href)
         document.path = path + "/" + document.nom
         file = open(document.path, 'w')
         file.write(response.read())
         file.close()
-        t = time.mktime(datetime.datetime.strptime(document.date, "%d.%m.%Y").timetuple())
+        t = self.timestamp(document.date)
         os.utime(document.path, (t, t))
         print(document.path + "... downloaded")
 
@@ -219,10 +220,3 @@ class Document:
         self.nom = nom
         self.href = href
         self.date = date
-
-    def toString(self):
-        print "%s %s %s" % (self.nom, self.date, self.href)
-
-
-
-
