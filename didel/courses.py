@@ -128,7 +128,7 @@ class Course(CoursePage):
 
     def docs_and_links(self, path):
         if not (os.path.isdir(path)):
-            print("the path '" + path + "' doen't exist")
+            print("the path '" + path + "' dosen't exist")
         d = DocumentsLinks(self.ref)
         d.fetch(self.session)
         d.synchronize(path)
@@ -205,10 +205,10 @@ class DocumentsLinks(DidelEntity):
                     self.download(self.ressources[k], path)
 
     def download(self, document, path):
-        response = urllib2.urlopen(ROOT_URL + document.href)
+        response = self.session.get(ROOT_URL + document.href)
         document.path = path + "/" + document.nom
         file = open(document.path, 'w')
-        file.write(response.read())
+        file.write(response.content)
         file.close()
         t = self.timestamp(document.date)
         os.utime(document.path, (t, t))
