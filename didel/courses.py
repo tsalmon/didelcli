@@ -10,7 +10,6 @@ except ImportError:  # Python 3
 from didel.base import DidelEntity, ROOT_URL
 from didel.souputils import parse_homemade_dl
 import re, os, datetime
-import urllib2
 
 from time import mktime
 from os import mkdir
@@ -195,7 +194,7 @@ class DocumentsLinks(DidelEntity):
         if not(os.path.isdir(path)):
             mkdir(path)
         for k in self.ressources:
-            if(self.ressources[k].__class__.__name__ == 'DocumentsLinks'): 
+            if(isinstance(self.ressources[k], DocumentsLinks)): 
                 self.ressources[k].synchronize(path + "/" + k)
             else:
                 if (not os.path.exists(path + "/" + k) or (
