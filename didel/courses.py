@@ -232,3 +232,4 @@ class Document(object):
         self.name = name
         self.url = url
         self.date = date
+
