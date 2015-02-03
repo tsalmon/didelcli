@@ -214,6 +214,11 @@ class DidelCli(object):
         with open(expanduser(filename), 'rb') as f:
             return a.submit(s, title, f)
 
+    def action_pull(self):
+        print("pull self")
+
+    def action_pull_save(self, save):
+        print("pull save")
 
     def action_pull(self):
         """
@@ -247,11 +252,11 @@ class DidelCli(object):
         """
         # We're using a custom parser here to handle subcommands.
         argv = self.argv
-        argc = len(argv)
+        argc = len(argv)        
         if argc == 0:
             return self.print_help()
         action = argv.pop(0)
-        argc -= 1
+        argc -= 1   
         if action in HELP_FLAGS:
             self.print_version()
             return self.print_help()

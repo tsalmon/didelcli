@@ -7,12 +7,6 @@ if platform.python_version() < '2.7':
 else:
     import unittest
 
-from os import remove
-from tempfile import NamedTemporaryFile
-
-import requests
-import responses
-
 from didel.student import Student
 
 class TestSession(unittest.TestCase):
