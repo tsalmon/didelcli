@@ -15,6 +15,3 @@ class TestCli(unittest.TestCase):
         c = DidelCli(["foo"])
         self.assertEquals("foo", c.exe)
 
-	def test_cmd_pull(self):
-	    ret = DidelCli(["didel", "pull", "save"])
-	    ret.run()
