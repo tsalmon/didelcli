@@ -53,6 +53,8 @@ class Student(DidelEntity):
         sc.fetch(self.session)
         return [self.get_course(ref) for ref in sc.refs]
 
+
+
 class StudentCoursesRefs(DidelEntity):   
     """
     didel main page 
