@@ -229,14 +229,11 @@ class DidelCli(object):
         print("pull to %s" % self.config.get("Courses.path"))
         all_courses = student.get_all_courses()
         for course in all_courses:
-            print("%s - %s" % (course.title, course.teacher))
             course.docs_and_links(path)
-            print("")
-
 
     def action_pull_save(self, path):
         """
-        Define path of folde where we will download files with action_pull
+        Define path of folder where we will download files with action_pull
         """
         self.config.set("Courses.path", path, True)
         self.action_pull()
@@ -274,7 +271,7 @@ class DidelCli(object):
         """
         # We're using a custom parser here to handle subcommands.
         argv = self.argv
-        argc = len(argv)        
+        argc = len(argv)
         if argc == 0:
             return self.print_help()
         action = argv.pop(0)

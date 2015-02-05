@@ -179,7 +179,7 @@ class DocumentsLinks(DidelEntity):
 
     def populate(self, soup, session):
         """
-        get all documents and folder of a course
+        Get all documents and folder of a course.
         """
         table = soup.select(".claroTable tbody tr[align=center]")
         for line in table:
