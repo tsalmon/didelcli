@@ -43,6 +43,7 @@ class Student(DidelEntity):
             self._courses[ref] = c
         return self._courses[ref]
 
+
     def get_all_courses(self):
         """
         return all courses

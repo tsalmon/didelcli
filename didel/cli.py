@@ -217,8 +217,13 @@ class DidelCli(object):
 
     def action_pull(self):
         print("pull to %s" % self.config.get("Courses.path"))
-
-
+        path = self.config.get("Courses.path")
+        student = self.get_student()
+        all_courses = student.get_all_courses()
+        for course in all_courses:
+            print("%s - %s" % (course.title, course.teacher))
+            course.docs_and_links(path)
+            print("")
     def action_pull_save(self, path):
         self.config.set("Courses.path", path, True)
         self.action_pull()
