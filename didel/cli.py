@@ -220,14 +220,20 @@ class DidelCli(object):
         Download `documents et liens` files and folders of each course 
         followed by a student using path defined in SOURCE_FILE (cf config.py). 
         """
-        print("pull to %s" % self.config.get("Courses.path"))
+        student = self.get_student() # check if student is initialized in `SOURCE_FILE`
         path = self.config.get("Courses.path")
-        student = self.get_student()
+        if path is None:
+            print("Configure your path to pull with" \
+                  " '%s pull:save <path>'" % self.exe)
+            return None
+        print("pull to %s" % self.config.get("Courses.path"))
         all_courses = student.get_all_courses()
         for course in all_courses:
             print("%s - %s" % (course.title, course.teacher))
             course.docs_and_links(path)
             print("")
+
+
     def action_pull_save(self, path):
         """
         Define path of folde where we will download files with action_pull
