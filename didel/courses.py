@@ -154,7 +154,7 @@ class Course(CoursePage):
 
     def unenroll(self):
         """
-        Unenroll the current student from this course
+        Unenroll the current student from this course.
         """
         path = '/claroline/auth/courses.php'
         text = u'Vous avez été désinscrit'
