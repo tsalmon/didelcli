@@ -9,8 +9,8 @@ else:
 
 from didel.student import Student
 
-class TestSession(unittest.TestCase):
-
+class TestStudent(unittest.TestCase):
+	
 	def test_explore_docs_n_liens(self):
 		student = Student("", "")
 		course = student.get_course("M2T3STAGES")	
