@@ -214,11 +214,14 @@ class DidelCli(object):
         with open(expanduser(filename), 'rb') as f:
             return a.submit(s, title, f)
 
-    def action_pull(self):
-        print("pull self")
 
-    def action_pull_save(self, save):
-        print("pull save")
+    def action_pull(self):
+        print("pull to %s" % self.config.get("Courses.path"))
+
+
+    def action_pull_save(self, path):
+        self.config.set("Courses.path", path, True)
+        self.action_pull()
 
     def action_pull(self):
         """
