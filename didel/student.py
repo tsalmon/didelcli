@@ -66,6 +66,7 @@ class StudentCoursesRefs(DidelEntity):
         self.path = '/?fromCasServer=true'
         self.refs = []
 
+
     def populate(self, soup, *args, **kw):
         """
         save references of courses in a list
