@@ -226,10 +226,11 @@ class DidelCli(object):
             print("Configure your path to pull with" \
                   " '%s pull:save <path>'" % self.exe)
             return None
-        print("pull to %s" % self.config.get("Courses.path"))
+        print("pull to %s" % path)
         all_courses = student.get_all_courses()
         for course in all_courses:
             course.docs_and_links(path)
+
 
     def action_pull_save(self, path):
         """
@@ -275,7 +276,7 @@ class DidelCli(object):
         if argc == 0:
             return self.print_help()
         action = argv.pop(0)
-        argc -= 1   
+        argc -= 1
         if action in HELP_FLAGS:
             self.print_version()
             return self.print_help()
